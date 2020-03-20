@@ -1,12 +1,9 @@
 ---
 name: General Question
 about: Any question relating to the EKS AMI
-
----
-
-<!-- Please use this template for asking a question and provide as much info as possible. Please also search for existing open and closed issues that may answer your question. Thanks!-->
-
-**Environment**:
+ ---
+ <!-- Please use this template for asking a question and provide as much info as possible. Please also search for existing open and closed issues that may answer your question. Thanks!-->
+ **Environment**:
 - AWS Region:
 - Instance Type(s):
 - EKS Platform version (use `aws eks describe-cluster --name <name> --query cluster.platformVersion`):
@@ -17,5 +14,3 @@ about: Any question relating to the EKS AMI
 <!-- Put release info in the triple backticks below-->
 ```
 ```
-
-<!-- If this is a security issue, please do not discuss on GitHub. Please report any suspected or confirmed security issues to AWS Security https://aws.amazon.com/security/vulnerability-reporting/ -->

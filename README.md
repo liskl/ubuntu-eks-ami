@@ -1,4 +1,4 @@
-# Amazon EKS AMI Build Specification
+# Amazon EKS AMI Build Specification [![Build status](https://badge.buildkite.com/0dcc707973e4bc57d73d24d448d46905ca0c97d763f073cf56.svg)](https://buildkite.com/gusto/packer-ubuntu-eks-ami)
 
 This repository contains resources and configuration scripts for building a
 custom Amazon EKS AMI with [HashiCorp Packer](https://www.packer.io/) in ubuntu 18.04.
@@ -17,7 +17,7 @@ For more information, see [Authentication](https://www.packer.io/docs/builders/a
 in the Packer documentation.
 
 **Note**
-The default instance type to build this AMI is an `m5.large` and does not
+The default instance type to build this AMI is an `c5.large` and does not
 qualify for the AWS free tier. You are charged for any instances created
 when building this AMI.
 

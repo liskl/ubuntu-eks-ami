@@ -1,6 +1,6 @@
 {
   "variables": {
-    "aws_region": "us-west-2",
+    "aws_region": "us-east-2",
     "ami_name": null,
     "ami_groups": "",
     "creator": "{{env `USER`}}",
@@ -9,10 +9,10 @@
     "binary_bucket_name": "amazon-eks",
     "binary_bucket_region": "us-west-2",
     "kubernetes_version": null,
-    "kubernetes_build_date": "",
+    "kubernetes_build_date": null,
     "docker_version": "18.06",
     "cni_version": "v0.6.0",
-    "cni_plugin_version": "v0.7.5",
+    "cni_plugin_version": "v0.8.2",
 
     "source_ami_owners": "099720109477",
     "source_ami_filter_name": "ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-*",

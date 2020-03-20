@@ -130,10 +130,6 @@ else
     exit 1
 fi
 
-PAUSE_CONTAINER_ACCOUNT=$(get_pause_container_account_for_region "${AWS_DEFAULT_REGION}")
-PAUSE_CONTAINER_IMAGE=${PAUSE_CONTAINER_IMAGE:-$PAUSE_CONTAINER_ACCOUNT.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/eks/pause-${ARCH}}
-PAUSE_CONTAINER="$PAUSE_CONTAINER_IMAGE:$PAUSE_CONTAINER_VERSION"
-
 ### kubelet kubeconfig
 
 CA_CERTIFICATE_DIRECTORY=/etc/kubernetes/pki
@@ -141,8 +137,8 @@ CA_CERTIFICATE_FILE_PATH=$CA_CERTIFICATE_DIRECTORY/ca.crt
 mkdir -p $CA_CERTIFICATE_DIRECTORY
 if [[ -z "${B64_CLUSTER_CA}" ]] && [[ -z "${APISERVER_ENDPOINT}" ]]; then
     DESCRIBE_CLUSTER_RESULT="/tmp/describe_cluster_result.txt"
-    rc=0
-    # Retry the DescribleCluster API for API_RETRY_ATTEMPTS
+   rc=0
+    # Retry the DescribeCluster API for API_RETRY_ATTEMPTS
     for attempt in `seq 0 $API_RETRY_ATTEMPTS`; do
         if [[ $attempt -gt 0 ]]; then
             echo "Attempt $attempt of $API_RETRY_ATTEMPTS"
@@ -175,6 +171,7 @@ echo $B64_CLUSTER_CA | base64 -d > $CA_CERTIFICATE_FILE_PATH
 
 sed -i s,CLUSTER_NAME,$CLUSTER_NAME,g /var/lib/kubelet/kubeconfig
 sed -i s,MASTER_ENDPOINT,$APISERVER_ENDPOINT,g /var/lib/kubelet/kubeconfig
+
 ### kubelet.service configuration
 
 MAC=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/ -s | head -n 1 | sed 's/\/$//')
@@ -204,7 +201,7 @@ fi
 
 cat <<EOF > /etc/systemd/system/kubelet.service.d/10-kubelet-args.conf
 [Service]
-Environment='KUBELET_ARGS=--node-ip=$INTERNAL_IP --pod-infra-container-image=$PAUSE_CONTAINER'
+Environment='KUBELET_ARGS=--node-ip=$INTERNAL_IP --pod-infra-container-image=$(get_pause_container_account_for_region "${AWS_DEFAULT_REGION}").dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/eks/pause-${ARCH}:$PAUSE_CONTAINER_VERSION'
 EOF
 
 if [[ -n "$KUBELET_EXTRA_ARGS" ]]; then
