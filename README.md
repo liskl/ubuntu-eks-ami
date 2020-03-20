@@ -1,4 +1,4 @@
-# Amazon EKS AMI Build Specification [![Build status](https://badge.buildkite.com/0dcc707973e4bc57d73d24d448d46905ca0c97d763f073cf56.svg)](https://buildkite.com/gusto/packer-ubuntu-eks-ami)
+# Amazon EKS AMI Build Specification
 
 This repository contains resources and configuration scripts for building a
 custom Amazon EKS AMI with [HashiCorp Packer](https://www.packer.io/) in ubuntu 18.04.
@@ -39,73 +39,21 @@ Provisioner](https://www.packer.io/docs/provisioners/shell.html) runs the
 necessary configuration tasks.  Then, Packer creates an AMI from the instance
 and terminates the instance after the AMI is created.
 
-## AMI versions
-
-We currently publish 4 versions of the AMI:
- - 1.10
- - 1.11
- - 1.12
- - latest
-
 ## Using the AMI
 
 If you are just getting started with Amazon EKS, we recommend that you follow
-the [Getting Started](https://docs.aws.amazon.com/eks/latest/userguide/getting-started.html)
-chapter in the Amazon EKS User Guide. However, if you want to use the ubuntu AMI provided
-here, you will need to search for our specific AMI.
-An easy way to find it would be to use this [link](https://us-west-2.console.aws.amazon.com/ec2/v2/home?region=us-west-2#Images:visibility=public-images;ownerAlias=572074891743;name=ubuntu-EKS-latest-*;sort=desc:name)
-
-Alternatively, in terraform you could use the following `aws_ami` resource:
-
-```
-data "aws_ami" "eks-worker" {
-  filter {
-    name   = "name"
-    values = ["ubuntu-EKS-latest-*"]
-  }
-
-  most_recent = true
-  owners      = ["572074891743"]
-}
-```
-```
-data "aws_ami" "eks-worker" {
-  filter {
-    name   = "name"
-    values = ["ubuntu-EKS-1.11-*"]
-  }
-
-  most_recent = true
-  owners      = ["572074891743"]
-}
-```
-```
-data "aws_ami" "eks-worker" {
-  filter {
-    name   = "name"
-    values = ["ubuntu-EKS-1.10-*"]
-  }
-
-  most_recent = true
-  owners      = ["572074891743"]
-}
-```
-
-If you already have a cluster, and you want to launch a node group with your
-new AMI, see [Launching Amazon EKS Worker Nodes](https://docs.aws.amazon.com/eks/latest/userguide/launch-workers.html)
+our [Getting Started](https://docs.aws.amazon.com/eks/latest/userguide/getting-started.html)
+chapter in the Amazon EKS User Guide. If you already have a cluster, and you
+want to launch a node group with your new AMI, see [Launching Amazon EKS Worker
+Nodes](https://docs.aws.amazon.com/eks/latest/userguide/launch-workers.html)
 in the Amazon EKS User Guide.
 
 The [`amazon-eks-nodegroup.yaml`](amazon-eks-nodegroup.yaml) AWS CloudFormation
 template in this repository is provided to launch a node group with the new AMI
-ID that is returned when Packer finishes building.  When using this template, you
-can simply choose to use the AMI (via the above search), rather than what is
-provided in the documentation.
-
-Note that there is important Amazon EC2 user data in this CloudFormation template
-that bootstraps the worker nodes when they are launched so that they can
-register with your Amazon EKS cluster. Your nodes cannot register
-properly without this user data.  For more information, please take
-a look at the `files/bootstrap.sh` script
+ID that is returned when Packer finishes building. Note that there is important
+Amazon EC2 user data in this CloudFormation template that bootstraps the worker
+nodes when they are launched so that they can register with your Amazon EKS
+cluster. Your nodes cannot register properly without this user data.
 
 ### Compatibility with CloudFormation Template
 
@@ -113,13 +61,26 @@ The CloudFormation template for EKS Nodes is published in the S3 bucket
 `amazon-eks` under the path `cloudformation`. You can see a list of previous
 versions by running `aws s3 ls s3://amazon-eks/cloudformation/`.
 
-| CloudFormation Version | EKS AMI version (equivalent)          | Ubuntu EKS AMI versions                               | [amazon-vpc-cni-k8s](https://github.com/aws/amazon-vpc-cni-k8s/releases) |
-| ---------------------- | ------------------------------------  | ----------------------------------------------------- | -------------------------------- |
+| CloudFormation Version | EKS AMI version (equivalent)                    | Ubuntu EKS AMI versions                               | [amazon-vpc-cni-k8s](https://github.com/aws/amazon-vpc-cni-k8s/releases) |
+| ---------------------- | ----------------------------------------------- | ----------------------------------------------------- | -------------------------------- |
+| 2019-09-27             | amazon-eks-node-(1.14,1.13,1.12,1.11)-v20190927 |                                                       | v1.5.4                           |
+| 2019-09-17             | amazon-eks-node-(1.14,1.13,1.12,1.11)-v20190906 |                                                       | v1.5.3                           |
+| 2019-02-11             | amazon-eks-node-(1.12,1.11,1.10)-v20190327      | v1.3.2 (for p3dn.24xlarge instances)                  | v1.3.2                           |
+| 2019-02-11             | amazon-eks-node-(1.11,1.10)-v20190220           | v1.3.2 (for p3dn.24xlarge instances)                  |                                  |
+| 2019-02-11             | amazon-eks-node-(1.11,1.10)-v20190211           | v1.3.2 (for p3dn.24xlarge instances)                  |                                  |
+| 2018-12-10             | amazon-eks-node-(1.11,1.10)-v20181210           | ubuntu-EKS-1.11-1549066345,ubuntu-EKS-1.10-1549065992 | v1.2.1                           |
+| 2018-11-07             | amazon-eks-node-v25+                            | amazon-eks-ubuntu-18.04-node-1547856316               | v1.2.1 (for t3 and r5 instances) |
+| 2018-08-30             | amazon-eks-node-v23+                            | amazon-eks-ubuntu-18.04-node-1538521153               | v1.1.0                           |
+| 2018-08-21             | amazon-eks-node-v23+                            | amazon-eks-ubuntu-18.04-node-1538521153               | v1.1.0                           |
 
-| 2019-05-23             | amazon-eks-node-(1.12,1.11,1.10)-v20190327 |                                                  | v1.3.2                           |
-| 2018-12-10             | amazon-eks-node-(1.11,1.10)-v20181210 | ubuntu-EKS-1.11-1549066345,ubuntu-EKS-1.10-1549065992 | v1.2.1                           |
-| 2018-11-07             | amazon-eks-node-v25+                  | amazon-eks-ubuntu-18.04-node-1547856316               | v1.2.1 (for t3 and r5 instances) |
-| 2018-08-30             | amazon-eks-node-v23+                  | amazon-eks-ubuntu-18.04-node-1538521153               | v1.1.0                           |
 
-Since this porting was done initially with the v23 of the amazon-eks-node,
-we do not support any prior versions of the cloudformation template
+For older versions of the EKS AMI (v20-v22), you can find the CloudFormation
+templates in the same bucket under the path `s3://amazon-eks/1.10.3/2018-06-05/`.
+
+## Security
+
+For security issues or concerns, please do not open an issue or pull request on GitHub. Please report any suspected or confirmed security issues to AWS Security https://aws.amazon.com/security/vulnerability-reporting/
+
+## License Summary
+
+This sample code is made available under a modified MIT license. See the LICENSE file.

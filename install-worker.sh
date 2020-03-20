@@ -3,7 +3,6 @@
 set -o pipefail
 set -o nounset
 set -o errexit
-
 IFS=$'\n\t'
 
 TEMPLATE_DIR=${TEMPLATE_DIR:-/tmp/worker}
@@ -84,7 +83,6 @@ update-rc.d chrony defaults 80 20
 # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/set-time.html#configure-amazon-time-service-ubuntu
 
 sudo sed -i '1s/^/server 169.254.169.123 prefer iburst minpoll 4 maxpoll 4\n/' /etc/chrony/chrony.conf
-
 
 # If current clocksource is xen, switch to tsc
 # @sinneduy: This probably won't work in ubuntu, should probably try to validate it later
@@ -195,20 +193,6 @@ sudo sha512sum -c cni-plugins-${ARCH}-${CNI_PLUGIN_VERSION}.tgz.sha512
 sudo tar -xvf cni-plugins-${ARCH}-${CNI_PLUGIN_VERSION}.tgz -C /opt/cni/bin
 rm cni-plugins-${ARCH}-${CNI_PLUGIN_VERSION}.tgz cni-plugins-${ARCH}-${CNI_PLUGIN_VERSION}.tgz.sha512
 
-# Install kubelet
-# @sinneduy It should be noted that this diverges significantly from how amazon-eks-ami installs the kubelet and kubectl binaries
-# https://github.com/awslabs/amazon-eks-ami/blob/master/install-worker.sh#L143-L170
-curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-sudo bash -c "cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
-deb http://apt.kubernetes.io/ kubernetes-xenial main
-EOF"
-
-sudo apt-get update -y
-
-sudo apt-get install -y kubelet=$KUBERNETES_VERSION-00
-sudo apt-mark hold kubelet
-
-# Install aws-iam-authenticator
 echo "Downloading binaries from: s3://$BINARY_BUCKET_NAME"
 S3_DOMAIN="s3-$BINARY_BUCKET_REGION"
 if [ "$BINARY_BUCKET_REGION" = "us-east-1" ]; then
@@ -218,12 +202,11 @@ S3_URL_BASE="https://$BINARY_BUCKET_NAME.$S3_DOMAIN.amazonaws.com/$KUBERNETES_VE
 S3_PATH="s3://$BINARY_BUCKET_NAME/$KUBERNETES_VERSION/$KUBERNETES_BUILD_DATE/bin/linux/$ARCH"
 
 BINARIES=(
+    kubelet
     aws-iam-authenticator
 )
 for binary in ${BINARIES[*]} ; do
-    # It should be noted that we diverge here:
-    # Instead of checking for expected access keys, we just use wget instead
-    if false; then #type "aws" > /dev/null; then
+    if [[ ! -z "$AWS_ACCESS_KEY_ID" ]]; then
         echo "AWS cli present - using it to copy binaries from s3."
         aws s3 cp --region $BINARY_BUCKET_REGION $S3_PATH/$binary .
         aws s3 cp --region $BINARY_BUCKET_REGION $S3_PATH/$binary.sha256 .
@@ -238,24 +221,14 @@ for binary in ${BINARIES[*]} ; do
 done
 sudo rm *.sha256
 
-KUBELET_CONFIG=""
+KUBELET_CONFIG="kubelet-config.json"
 KUBERNETES_MINOR_VERSION=${KUBERNETES_VERSION%.*}
-if [ "$KUBERNETES_MINOR_VERSION" = "1.10" ] || [ "$KUBERNETES_MINOR_VERSION" = "1.11" ]; then
-    KUBELET_CONFIG=kubelet-config.json
-else
-    # For newer versions use this config to fix https://github.com/kubernetes/kubernetes/issues/74412.
-    KUBELET_CONFIG=kubelet-config-with-secret-polling.json
-fi
 
 sudo mkdir -p /etc/kubernetes/kubelet
 sudo mkdir -p /etc/systemd/system/kubelet.service.d
 sudo mv $TEMPLATE_DIR/kubelet-kubeconfig /var/lib/kubelet/kubeconfig
 sudo chown root:root /var/lib/kubelet/kubeconfig
-if [ "$KUBERNETES_MINOR_VERSION" = "1.14" ]; then
-    sudo mv $TEMPLATE_DIR/1.14/kubelet.service /etc/systemd/system/kubelet.service
-else
-    sudo mv $TEMPLATE_DIR/kubelet.service /etc/systemd/system/kubelet.service
-fi
+sudo mv $TEMPLATE_DIR/kubelet.service /etc/systemd/system/kubelet.service
 sudo chown root:root /etc/systemd/system/kubelet.service
 sudo mv $TEMPLATE_DIR/$KUBELET_CONFIG /etc/kubernetes/kubelet/kubelet-config.json
 sudo chown root:root /etc/kubernetes/kubelet/kubelet-config.json
@@ -282,11 +255,10 @@ cat <<EOF > /tmp/release
 BASE_AMI_ID="$BASE_AMI_ID"
 BUILD_TIME="$(date)"
 BUILD_KERNEL="$(uname -r)"
-AMI_NAME="$AMI_NAME"
 ARCH="$(uname -m)"
 EOF
 sudo mv /tmp/release /etc/eks/release
-sudo chown root:root /etc/eks/*
+sudo chown -R root:root /etc/eks
 
 ################################################################################
 ### Cleanup ####################################################################
